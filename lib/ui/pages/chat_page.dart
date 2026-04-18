@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/message_model.dart';
-import '../../data/nasa_api_data.dart';
 import '../../services/nasa_api_service.dart';
+import '../../services/storage_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -14,6 +15,7 @@ class _ChatPageState extends State<ChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final NasaApiService _apiService = NasaApiService();
+  final StorageService _storageService = StorageService();
 
   // 訊息狀態清單
   List<ChatMessage> messages = [
@@ -92,13 +94,24 @@ class _ChatPageState extends State<ChatPage> {
       String? parsedDate = _extractDate(text);
 
       final nasaData = await _apiService.getApod(date: parsedDate);
+      String novaReplyText;
+
+      if (nasaData.isFromCache) {
+        if (parsedDate != null && nasaData.date != parsedDate) {
+          novaReplyText = '離線中快取無資料，顯示 ${nasaData.date} 歷史資訊';
+        } else {
+          novaReplyText = '離線模式：顯示 ${nasaData.date} 的快取資料';
+        }
+      } else {
+        novaReplyText = parsedDate != null ? '那天宇宙長這樣...' : '這是今天的 APOD：';
+      }
 
       setState(() {
         messages.add(ChatMessage(
             id: DateTime.now().millisecondsSinceEpoch.toString(),
-            text: parsedDate != null ? '那天宇宙長這樣...' : '這是今天的 APOD：',
+            text: novaReplyText,
             isFromUser: false,
-            nasaData: nasaData, // 塞入 API 資料
+            nasaData: nasaData,
             timestamp: DateTime.now()
         ));
       });
@@ -142,16 +155,17 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   /// 長按收藏
-  void _handleLongPress(ChatMessage message) {
+  void _handleLongPress(ChatMessage message) async {
     if (message.nasaData != null) {
-      // TODO: 呼叫 StorageService 將 message.nasaData 存入資料庫
+      // 1. 儲存到 SQLite
+      await _storageService.saveFavorite(message.nasaData!);
+
+      // 2. 顯示成功提示
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('已加入收藏！'),
-          action: SnackBarAction(
-            label: '復原',
-            onPressed: () {},
-          ),
+          content: Text('已收藏 ${message.nasaData!.title}'),
+          backgroundColor: Colors.green,
         ),
       );
     }
@@ -179,10 +193,9 @@ class _ChatPageState extends State<ChatPage> {
           // 顯示對話文字
           Text(msg.text, style: const TextStyle(fontSize: 16.0)),
 
-          // 如果有 NASA 資料，顯示多媒體區塊
+          // 多媒體區塊
           if (msg.nasaData != null) ...[
             const SizedBox(height: 8.0),
-            // 判斷是圖片還是影片
             if (msg.nasaData!.mediaType == 'video')
               Text(
                 '影片連結: ${msg.nasaData!.url}',
@@ -191,25 +204,19 @@ class _ChatPageState extends State<ChatPage> {
             else
               ClipRRect(
                 borderRadius: BorderRadius.circular(8.0),
-                child: Image.network(
-                  msg.nasaData!.url,
+                child:CachedNetworkImage(
+                  imageUrl: msg.nasaData!.url,
+                  placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) => const Icon(Icons.broken_image),
                   fit: BoxFit.cover,
-                  // 加入載入中的佔位符號，提升體驗
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator());
-                  },
-                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image),
                 ),
               ),
             const SizedBox(height: 8.0),
-            // 顯示標題與日期
             Text(
               '${msg.nasaData!.title} (${msg.nasaData!.date})',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4.0),
-            // 顯示說明文字 (限制行數避免洗版)
             Text(
               msg.nasaData!.explanation,
               maxLines: 3,
