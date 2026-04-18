@@ -10,8 +10,6 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('找不到 .env 檔案或載入失敗');
   }
-
-  // 5. 啟動 App
   runApp(const MyApp());
 }
 
