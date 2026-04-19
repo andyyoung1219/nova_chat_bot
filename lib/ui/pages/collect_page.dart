@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
 import '../../data/nasa_api_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../cards/sky_card.dart';
+import '../../services/share_service.dart';
 
 class CollectPage extends StatefulWidget {
   const CollectPage({super.key});
@@ -12,6 +14,95 @@ class CollectPage extends StatefulWidget {
 
 class _CollectPageState extends State<CollectPage> {
   final StorageService _storageService = StorageService();
+
+  void _showSharePreviewDialog(BuildContext context, NasaApiData item) {
+    final GlobalKey boundaryKey = GlobalKey();
+    bool isProcessing = false;
+    String inputName = '';
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    showDialog(
+        context: context,
+        barrierDismissible: false, //
+        builder: (ctx) {
+          return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  contentPadding: EdgeInsets.zero,
+                  backgroundColor: Colors.transparent,
+                  scrollable: true,
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SkyCard(
+                        boundaryKey: boundaryKey,
+                        title: item.title,
+                        date: item.date,
+                        imageUrl: item.url,
+                        userName: inputName,
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        child: TextField(
+                          decoration: const InputDecoration(
+                            hintText: '輸入壽星名字 (選填)',
+                            border: InputBorder.none,
+                            icon: Icon(Icons.person_outline, color: Colors.grey),
+                          ),
+                          maxLength: 15, //
+                          onChanged: (value) {
+                            setState(() {
+                              inputName = value;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: isProcessing ? null : () => Navigator.pop(ctx),
+                      child: const Text('取消', style: TextStyle(color: Colors.white70)),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: Colors.black87,
+                      ),
+                      icon: isProcessing
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2))
+                          : const Icon(Icons.share),
+                      label: Text(isProcessing ? '產生中...' : '分享星空卡'),
+                      onPressed: isProcessing ? null : () async {
+                        setState(() => isProcessing = true);
+
+                        // 執行分享並取得結果
+                        final success = await ShareCardManager.captureAndShare(boundaryKey, item.date);
+
+                        if (ctx.mounted) {
+                          Navigator.pop(ctx);
+                        }
+
+                        if (success) {
+                          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('已分享星空卡！')));
+                        } else {
+                          scaffoldMessenger.showSnackBar(const SnackBar(content: Text('分享失敗')));
+                        }
+                      },
+                    )
+                  ],
+                );
+              }
+          );
+        }
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,6 +179,14 @@ class _CollectPageState extends State<CollectPage> {
                                   ],
                                 ),
                               ),
+                              if (item.mediaType != 'video')
+                                IconButton(
+                                  icon: const Icon(Icons.cake, color: Colors.orangeAccent),
+                                  tooltip: '製作星空卡',
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  onPressed: () => _showSharePreviewDialog(context, item),
+                                ),
                               IconButton(
                                 icon: const Icon(Icons.close, color: Colors.grey),
                                 constraints: const BoxConstraints(),
