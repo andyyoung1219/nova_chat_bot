@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../data/message_model.dart';
 import '../../services/nasa_api_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/speech_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatPage extends StatefulWidget {
@@ -16,6 +17,7 @@ class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   final NasaApiService _apiService = NasaApiService();
   final StorageService _storageService = StorageService();
+  final SpeechService _speechService = SpeechService();
 
   // 訊息狀態清單
   List<ChatMessage> messages = [
@@ -28,10 +30,39 @@ class _ChatPageState extends State<ChatPage> {
   ];
 
   bool _isLoading = false; // 是否正在等待 API 回覆
+  bool _isListening = false; // 麥克風狀態
+
+  @override
+  void initState() {
+    super.initState();
+    _speechService.initSpeech(onStatus: (status) {
+      if (mounted) {
+        setState(() {
+          // listening 為 true
+          _isListening = (status == 'listening');
+        });
+      }
+    });
+  }
+
+  void _toggleSpeechInput() async {
+    if (_isListening) {
+      await _speechService.stopListening();
+    } else {
+      _textController.clear();
+      await _speechService.startListening(
+        onResult: (text) {
+          setState(() {
+            _textController.text = text;
+          });
+        },
+      );
+    }
+  }
 
   /// 解析字串以及判斷合理性
   String? _extractDate(String text) {
-    final regex = RegExp(r'(\d{4})[-/](\d{2})[-/](\d{2})');
+    final regex = RegExp(r'(\d{4})[年\-/\s]+(\d{1,2})[月越\-/\s]+(\d{1,2})[日號]?');
     final match = regex.firstMatch(text);
 
     if (match != null) {
@@ -270,14 +301,30 @@ class _ChatPageState extends State<ChatPage> {
                     child: TextField(
                       controller: _textController,
                       decoration: InputDecoration(
-                        hintText: '輸入日期 (例如: 1995/06/20)...',
+                        hintText: _isListening ? '聆聽中...請說出日期' : '輸入日期 (例如: 1995/06/20)...',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24.0),
                         ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        focusedBorder: _isListening
+                            ? OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24.0),
+                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                        )
+                            : null,
                       ),
                       // 允許鍵盤送出
                       onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _toggleSpeechInput,
+                    child: CircleAvatar(
+                      backgroundColor: _isListening ? Colors.red : Colors.grey[200],
+                      child: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening ? Colors.white : Colors.black87,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8.0),
