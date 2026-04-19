@@ -12,7 +12,7 @@ class NasaApiService {
   // 網路檢查
   Future<bool> _hasInternetConnection() async {
     try {
-      final result = await InternetAddress.lookup('api.nasa.gov')
+      final result = await InternetAddress.lookup('google.com')
           .timeout(const Duration(seconds: 3));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
