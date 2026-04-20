@@ -6,6 +6,7 @@
 
 ## 專案架構
 
+```
 lib/
 ├── main.dart                  # App 入口、MaterialApp 設定
 ├── data/
