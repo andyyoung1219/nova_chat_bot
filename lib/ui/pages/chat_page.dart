@@ -129,9 +129,9 @@ class _ChatPageState extends State<ChatPage> {
 
       if (nasaData.isFromCache) {
         if (parsedDate != null && nasaData.date != parsedDate) {
-          novaReplyText = '離線中快取無資料，顯示 ${nasaData.date} 歷史資訊';
+          novaReplyText = '離線中快取無 $parsedDate 資料，顯示 ${nasaData.date} 歷史資訊';
         } else {
-          novaReplyText = '離線模式：顯示 ${nasaData.date} 的快取資料';
+          novaReplyText = '顯示 ${nasaData.date} 的快取資料';
         }
       } else {
         novaReplyText = parsedDate != null ? '那天宇宙長這樣...' : '這是今天的 APOD：';
