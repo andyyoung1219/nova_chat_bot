@@ -16,6 +16,7 @@ class NasaApiService {
           .timeout(const Duration(seconds: 3));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (_) {
+      print("no internet");
       return false;
     }
   }
@@ -27,6 +28,12 @@ class NasaApiService {
     }
 
     final String queryDate = date ?? DateTime.now().toString().substring(0, 10);
+
+    final cachedData = await _storage.getCacheByDate(queryDate);
+    if (cachedData != null) {
+      return cachedData.copyWith(isFromCache: true);
+    }
+
     String requestUrl = '$_baseUrl?api_key=$apiKey';
     if (date != null && date.isNotEmpty) {
       requestUrl += '&date=$date';
