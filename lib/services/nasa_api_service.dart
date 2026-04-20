@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
+import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../data/nasa_api_data.dart';
@@ -21,7 +23,7 @@ class NasaApiService {
     }
   }
 
-  Future<NasaApiData> getApod({String? date}) async {
+  Future<NasaApiData> getApod({String? date, void Function()? onTimeout}) async {
     final String? apiKey = dotenv.env['NASA_API_KEY'];
     if (apiKey == null) {
       throw Exception('沒有抓到 api_key');
@@ -47,7 +49,7 @@ class NasaApiService {
 
     try {
       final response = await http
-          .get(Uri.parse(requestUrl));
+          .get(Uri.parse(requestUrl)).timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonMap = json.decode(utf8.decode(response.bodyBytes));
@@ -59,7 +61,19 @@ class NasaApiService {
       } else {
         throw Exception('API 錯誤: ${response.statusCode}');
       }
+    } on TimeoutException{
+      if (onTimeout != null) {
+        onTimeout();
+      }
+      debugPrint('網路請求逾時，嘗試讀取快取...');
+      return _getFallbackData(queryDate);
+    } on SocketException{
+      debugPrint('網路連線失敗，嘗試讀取快取...');
+      return _getFallbackData(queryDate);
     } catch (e) {
+      if (e.toString().contains('NASA API 發生異常')) {
+        rethrow;
+      }
       return _getFallbackData(queryDate);
     }
   }
