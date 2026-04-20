@@ -103,6 +103,46 @@ class _ChatPageState extends State<ChatPage> {
     return null;
   }
 
+  /// 顯示頂部懸浮通知
+  void _showTopToast(BuildContext context, String text) {
+    final overlayState = Overlay.of(context);
+
+    // 建立 Overlay 實體
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        // 設定位置：狀態列高度 + AppBar 預設高度 (kToolbarHeight) + 10px 緩衝
+        top: MediaQuery.of(context).padding.top + kToolbarHeight + 10,
+        left: 16.0,
+        right: 16.0,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.95),
+              borderRadius: BorderRadius.circular(8.0),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 4.0, offset: Offset(0, 2)),
+              ],
+            ),
+            child: Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 16.0),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // 將畫面插入到最頂層
+    overlayState.insert(overlayEntry);
+
+    // 2 秒後自動移除
+    Future.delayed(const Duration(seconds: 2), () {
+      overlayEntry.remove();
+    });
+  }
+  
   /// 處理發送訊息
   void _sendMessage() async {
     final text = _textController.text.trim();
@@ -124,7 +164,11 @@ class _ChatPageState extends State<ChatPage> {
     try {
       String? parsedDate = _extractDate(text);
 
-      final nasaData = await _apiService.getApod(date: parsedDate);
+      final nasaData = await _apiService.getApod(date: parsedDate, onTimeout: (){
+        if (mounted) {
+          _showTopToast(context, '網路請求逾時，已為您顯示快取資料');
+        }
+      });
       String novaReplyText;
 
       if (nasaData.isFromCache) {
@@ -193,12 +237,7 @@ class _ChatPageState extends State<ChatPage> {
 
       // 2. 顯示成功提示
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('已收藏 ${message.nasaData!.title}'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      _showTopToast(context, '已收藏 ${message.nasaData!.title}');
     }
   }
 
