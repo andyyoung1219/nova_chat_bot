@@ -6,26 +6,23 @@
 
 ## 專案架構
 
-```
 lib/
 ├── main.dart                  # App 入口、MaterialApp 設定
-├── UI/
-│   └── main_ui.dart           # BottomNavigationBar，切換 Tab
-├── pages/
-│   ├── chat/
-│   │   └── chat_page.dart     # Nova 聊天介面
-│   ├── collect/
-│   │   └── collect_page.dart  # 收藏瀏覽介面
-│   └── cards/
-│       └── sky_card.dart      # 生日星空卡元件
+├── data/
+│   ├── nasa_api_data.dart     # APOD 資料模型
+│   └── message_model.dart     # 聊天訊息模型
 ├── services/
 │   ├── nasa_api_service.dart  # NASA APOD API 呼叫 + 離線降級
 │   ├── storage_service.dart   # SQLite 快取 & 收藏管理
 │   ├── speech_service.dart    # 語音辨識封裝
 │   └── share_service.dart     # 截圖 & 系統分享
-└── data/
-    ├── nasa_api_data.dart     # APOD 資料模型
-    └── message_model.dart     # 聊天訊息模型
+└── ui/
+    ├── main_ui.dart           # BottomNavigationBar，切換 Tab
+    ├── cards/
+    │   └── sky_card.dart      # 生日星空卡元件
+    └── pages/
+        ├── chat_page.dart     # Nova 聊天介面
+        └── collect_page.dart  # 收藏瀏覽介面
 ```
 
 ### 架構選擇說明
