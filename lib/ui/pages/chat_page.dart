@@ -63,7 +63,7 @@ class _ChatPageState extends State<ChatPage> {
 
   /// 解析字串以及判斷合理性
   String? _extractDate(String text) {
-    final regex = RegExp(r'(\d{4})[年\-/\s]+(\d{1,2})[月越\-/\s]+(\d{1,2})[日號]?');
+    final regex = RegExp(r'(\d{4})[年\-/\s]+(\d{1,2})[月\-/\s]+(\d{1,2})[日號]?');
     final match = regex.firstMatch(text);
 
     if (match != null) {
