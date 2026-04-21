@@ -3,6 +3,7 @@ import '../../data/message_model.dart';
 import '../../services/nasa_api_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/speech_service.dart';
+import '../../services/theme_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatPage extends StatefulWidget {
@@ -254,7 +255,9 @@ class _ChatPageState extends State<ChatPage> {
         maxWidth: MediaQuery.of(context).size.width * 0.75, // 限制氣泡最大寬度
       ),
       decoration: BoxDecoration(
-        color: msg.isFromUser ? Colors.blue[100] : Colors.grey[200],
+        color: msg.isFromUser
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16.0),
       ),
       child: Column(
@@ -291,7 +294,7 @@ class _ChatPageState extends State<ChatPage> {
               msg.nasaData!.explanation,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12.0, color: Colors.black54),
+              style: TextStyle(fontSize: 12.0, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ]
         ],
@@ -300,13 +303,53 @@ class _ChatPageState extends State<ChatPage> {
     ),
     );
   }
+  Future<void> _pickDate(BuildContext context) async {
+    // 日期選擇器
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1995, 6, 16),
+      lastDate: DateTime.now(),
+      helpText: '選擇想觀測的日期',
+      cancelText: '取消',
+      confirmText: '確定',
+      initialEntryMode: DatePickerEntryMode.calendarOnly,
+    );
+
+    if (picked != null) {
+      final String formattedDate =
+          "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+
+      setState(() {
+        _textController.text = formattedDate;
+      });
+
+      _sendMessage();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nova'),
         elevation: 1,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            tooltip: '選擇日期',
+            onPressed: () => _pickDate(context), // 觸發日期選擇邏輯
+          ),
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            tooltip: isDarkMode ? '切換為亮色模式' : '切換為深色模式',
+            onPressed: () {
+              ThemeService().toggleTheme();
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -332,7 +375,7 @@ class _ChatPageState extends State<ChatPage> {
           // 輸入區域
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            color: Colors.white,
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: SafeArea(
               child: Row(
                 children: [
