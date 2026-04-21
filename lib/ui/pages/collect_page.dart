@@ -140,7 +140,7 @@ class _CollectPageState extends State<CollectPage> {
 
     // 2 秒後自動移除
     Future.delayed(const Duration(seconds: 2), () {
-      overlayEntry.remove();
+      if (overlayEntry.mounted) overlayEntry.remove();
     });
   }
 
