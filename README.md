@@ -13,6 +13,7 @@ lib/
 │   ├── nasa_api_data.dart     # APOD 資料模型
 │   └── message_model.dart     # 聊天訊息模型
 ├── services/
+│   ├── theme_service.dart     # 深淺色主題
 │   ├── nasa_api_service.dart  # NASA APOD API 呼叫 + 離線降級
 │   ├── storage_service.dart   # SQLite 快取 & 收藏管理
 │   ├── speech_service.dart    # 語音辨識封裝
@@ -43,6 +44,9 @@ lib/
 
 #### ShareCardManager — 截圖與系統分享
 以靜態方法封裝截圖與分享的完整流程，接收 `GlobalKey` 對 `SkyCard` 元件進行截圖，輸出 PNG 後呼叫系統分享介面，回傳 `bool` 讓呼叫端處理結果提示。
+
+#### ThemeService — 深淺色主題調整
+先跟隨系統設定之深淺主題，監聽使用者在應用程式中的調整。
 
 ---
 
@@ -81,6 +85,9 @@ Nova 的日期解析器以正規表達式實作，支援以下格式輸入：
 
 ### 語音輸入
 聊天室輸入框旁提供麥克風按鈕，支援繁體中文（`zh_TW`）、基礎英文語音辨識，輸入時，麥克風變紅提示使用者正在辨識。
+
+### 日曆選取日期
+AppBar 上加入日曆圖示，點擊後，可選擇日期，並自動發送訊息。
 
 ---
 
