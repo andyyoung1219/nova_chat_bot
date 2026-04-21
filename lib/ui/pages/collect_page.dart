@@ -4,6 +4,7 @@ import '../../data/nasa_api_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../cards/sky_card.dart';
 import '../../services/share_service.dart';
+import '../../services/theme_service.dart';
 
 class CollectPage extends StatefulWidget {
   const CollectPage({super.key});
@@ -145,10 +146,22 @@ class _CollectPageState extends State<CollectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('我的收藏'),
         elevation: 1,
+        actions: [
+          // 新增：深色模式切換按鈕
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            tooltip: isDarkMode ? '切換為亮色模式' : '切換為深色模式',
+            onPressed: () {
+              ThemeService().toggleTheme();
+            },
+          ),
+        ],
       ),
       body: ValueListenableBuilder<bool>(
         valueListenable: _storageService.updateNotifier,
@@ -187,7 +200,7 @@ class _CollectPageState extends State<CollectPage> {
                         maxWidth: MediaQuery.of(context).size.width * 0.85,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(16.0),
                       ),
                       child: Column(
@@ -202,17 +215,18 @@ class _CollectPageState extends State<CollectPage> {
                                   children: [
                                     Text(
                                       item.title,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16.0,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                     const SizedBox(height: 4.0),
                                     Text(
                                       item.date,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12.0,
-                                        color: Colors.black54,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
                                       ),
                                     ),
                                   ],
@@ -300,7 +314,8 @@ class _CollectPageState extends State<CollectPage> {
 
                           Text(
                             item.explanation,
-                            style: const TextStyle(fontSize: 14.0, color: Colors.black87),
+                            style: TextStyle(fontSize: 14.0, color: Theme.of(context).colorScheme.onSurfaceVariant,),
+
                           ),
                         ],
                       ),
