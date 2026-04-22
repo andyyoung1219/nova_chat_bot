@@ -232,14 +232,102 @@ class _ChatPageState extends State<ChatPage> {
 
   /// 長按收藏
   void _handleLongPress(ChatMessage message) async {
-    if (message.nasaData != null) {
-      // 1. 儲存到 SQLite
-      await _storageService.saveFavorite(message.nasaData!);
+    if (message.nasaData == null) return;
 
-      // 2. 顯示成功提示
-      if (!mounted) return;
-      _showTopToast(context, '已收藏 ${message.nasaData!.title}');
-    }
+    final nasaData = message.nasaData!;
+
+    final alreadyFavorited = await _storageService.isFavorite(nasaData.date);
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final colorScheme = Theme.of(dialogContext).colorScheme;
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.0)),
+          title: Row(
+            children: [
+              Icon(Icons.favorite, color: colorScheme.primary),
+              const SizedBox(width: 8.0),
+              const Text('加入收藏'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                nasaData.title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15.0),
+              ),
+              const SizedBox(height: 4.0),
+              Text(
+                nasaData.date,
+                style: TextStyle(
+                    color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    fontSize: 13.0
+                ),
+              ),
+              if (alreadyFavorited) ...[
+                const SizedBox(height: 12.0),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer,
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                          Icons.info_outline,
+                          size: 14.0,
+                          color: colorScheme.onSecondaryContainer
+                      ),
+                      const SizedBox(width: 6.0),
+                      Text(
+                        '已在收藏清單中',
+                        style: TextStyle(
+                            fontSize: 13.0,
+                            color: colorScheme.onSecondaryContainer
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text('取消', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+            ),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                // ✨ 按鈕改用主題的主要容器色 (Primary Container)
+                // 這樣在亮色模式下會是柔和的淺藍/淺紫，深色模式下會是沉穩的深色，非常舒服
+                backgroundColor: colorScheme.primaryContainer,
+                foregroundColor: colorScheme.onPrimaryContainer,
+                elevation: 0, // 拿掉陰影讓質感更扁平現代
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+              ),
+              // 星星圖示如果你還是想保留一點點黃色，可以單獨給圖示上色：
+              // Icon(Icons.star, size: 18.0, color: Colors.amber.shade600),
+              // 但我建議直接跟隨按鈕文字顏色就好，看起來最一致：
+              icon: const Icon(Icons.star, size: 18.0),
+              label: Text(alreadyFavorited ? '重新收藏' : '加入收藏'),
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await _storageService.saveFavorite(nasaData);
+                if (!mounted) return;
+                _showTopToast(context, '已收藏 ${nasaData.title}');
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// 繪製單一氣泡
